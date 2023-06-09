@@ -7,6 +7,7 @@ import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
@@ -25,12 +26,14 @@ public class GameGUI extends Application {
 
     // Create and initialize a status label
     private Label lblEggCount = new Label("Collected eggs: " + engine.totalEggs);
-    private Label lblKeyCount = new Label("Collected keys: " + engine.totalEggs);
-
+    private Label lblKeyCount = new Label("Collected keys: " + engine.totalKeys);
+    private Label lblTurnCount = new Label("Turns played: " + engine.moveNumber);
+    private Label controls = new Label("Movement Controls:");
     private Button moveUp = new Button("^");
     private Button moveDown = new Button("v");
-    private Button moveLeft = new Button("<-");
-    private Button moveRight = new Button("->");
+    private Button moveLeft = new Button("<");
+    private Button moveRight = new Button(">");
+    private Button helpButton = new Button("How To Play");
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -39,7 +42,13 @@ public class GameGUI extends Application {
         //root.setFont(new Font(24));
 
         //TODO replace with value collected by user
-        engine.initialiseEngine(5);
+
+        ChoiceDialog<Integer> dialog = new ChoiceDialog<>(5, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        dialog.setTitle("Choice Dialog");
+        dialog.setHeaderText("Select a number between 0 and 10. (Default = 5)");
+        dialog.setContentText("Choose:");
+        dialog.showAndWait();
+        engine.initialiseEngine(dialog.getSelectedItem());
 
         GridPane pane = new GridPane();
         for (int i = 0; i < engine.getSize(); i++)
@@ -50,72 +59,91 @@ public class GameGUI extends Application {
         borderPane.setCenter(pane);
 
         VBox vbox = new VBox(8); // spacing = 8
-        vbox.getChildren().addAll(lblEggCount, lblKeyCount);
+        vbox.getChildren().addAll(lblEggCount, lblKeyCount, helpButton);
         borderPane.setLeft(vbox);
 
         HBox hBox = new HBox(8);
-        hBox.getChildren().addAll(moveUp, moveDown, moveLeft, moveRight);
+        hBox.getChildren().addAll(controls, moveUp, moveDown, moveLeft, moveRight);
         borderPane.setBottom(hBox);
 
-        /**experiment*/
+        /**experiments
         //cell[2][2].setCellContents("X");
+        //cell[0][9].setCellContents(engine.mapAt(0, 0));
+        //cell[9][0].setCellContents(engine.mapAt(9, 9));
+        */
 
-        //TODO extract button events to method. Move alerts and movement attempts outside of button events. Reduce duplicate code
         moveUp.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                //Go left
+                //Repurposes the rightFrom function from GameEngine as the arrays used in the TUI and GUI are formed differently
                 MapPosition newCell = MapPosition.rightFrom(engine.currentCell);
                 engine.attemptToMoveTo(newCell);
-                mapRender();
+                movementHandler(newCell);
             }
         });
 
         moveLeft.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                //Go left
+                //Repurposes the downFrom function from GameEngine as the arrays used in the TUI and GUI are formed differently
                 MapPosition newCell = MapPosition.downFrom(engine.currentCell);
                 engine.attemptToMoveTo(newCell);
-                mapRender();
+                movementHandler(newCell);
             }
         });
         moveRight.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                //Go left
+                //Repurposes the upFrom function from GameEngine as the arrays used in the TUI and GUI are formed differently
                 MapPosition newCell = MapPosition.upFrom(engine.currentCell);
-                String message = engine.attemptToMoveTo(newCell);
-                if(!message.equals("")) {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, message);
-                    alert.showAndWait();
-                }
-                mapRender();
+                movementHandler(newCell);
             }
         });
         moveDown.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
             public void handle(MouseEvent event) {
-                //Go left
+                //Repurposes the downFrom function from GameEngine as the arrays used in the TUI and GUI are formed differently
                 MapPosition newCell = MapPosition.leftFrom(engine.currentCell);
-                String message = engine.attemptToMoveTo(newCell);
-                if(!message.equals("")) {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION, message);
-                    alert.showAndWait();
-                }
-                mapRender();
+                movementHandler(newCell);
+
+            }
+        });
+
+        helpButton.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            @Override
+            public void handle(MouseEvent event) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION, "Use the directional arrow buttons to move. " +
+                        "\nCollect all 5 eggs and reach the end to win. \nCollect Keys to open locks. " +
+                        "\nYou have 100 moves to finish the game");
+                alert.setTitle("Help");
+                alert.setHeaderText("Help Guide:");
+                alert.showAndWait();
             }
         });
 
         primaryStage.setScene(new Scene(borderPane, 800, 600));
         primaryStage.setTitle("Maze Runner Game");
         primaryStage.show();
-
         mapRender();
+    }
 
-        /**experiment
-        cell[0][9].setCellContents(engine.mapAt(0, 0));
-        //cell[9][0].setCellContents(engine.mapAt(9, 9));*/
+    private void movementHandler(MapPosition newCell) {
+        String message = engine.attemptToMoveTo(newCell);
+        if(!message.equals("")) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION, message);
+            alert.showAndWait();
+        }
+        if (engine.moveNumber <= 100) {
+            engine.moveNumber++;
+            lblEggCount.setText("Collected eggs: " + engine.totalEggs);
+            lblKeyCount.setText("Collected keys: " + engine.totalKeys);
+            lblTurnCount.setText("Turns played: " + engine.moveNumber);
+            mapRender();
+        }
+        //TODO create game end and scoring system here
+        /**if (engine.moveNumber > 100) {
+
+        }*/
     }
 
     /** In IntelliJ, do NOT run this method.  Run 'RunGame.main()' instead. */
